@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Engine 🐱</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:ital@1&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #e8761a;
+      --orange-light: #f5a94e;
+      --orange-pale: #fff3e0;
+      --cream: #fffaf4;
+      --brown: #5c3010;
+      --blush: #fce4d0;
+      --green: #6abf6a;
+      --sky: #7ecef4;
+      --pink: #f48fb1;
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--cream);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px 40px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 15% 20%, #ffe0b244 0%, transparent 45%),
+        radial-gradient(ellipse at 85% 80%, #fce4ec44 0%, transparent 45%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Header ── */
+    .header {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      margin-bottom: 8px;
+      animation: fadeDown 0.7s cubic-bezier(0.22,1,0.36,1) both;
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .header h1 {
+      font-size: clamp(1.6rem, 5vw, 2.2rem);
+      font-weight: 800;
+      color: var(--brown);
+      letter-spacing: -0.5px;
+    }
+
+    .header h1 span {
+      color: var(--orange);
+    }
+
+    .header p {
+      font-size: 0.95rem;
+      color: #a07050;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    /* ── Stats bar ── */
+    .stats {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 18px;
+      position: relative;
+      z-index: 1;
+      animation: fadeDown 0.7s 0.1s cubic-bezier(0.22,1,0.36,1) both;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .stat {
+      background: #fff;
+      border: 1.5px solid #f5dcc8;
+      border-radius: 40px;
+      padding: 7px 18px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--brown);
+      min-width: 110px;
+    }
+
+    .stat-icon { font-size: 1rem; }
+
+    .stat-bar-wrap {
+      flex: 1;
+      height: 6px;
+      background: #f0e0d0;
+      border-radius: 10px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+
+    .stat-bar {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+
+    .bar-happy  { background: #f48fb1; }
+    .bar-hunger { background: var(--orange); }
+    .bar-energy { background: #7ecef4; }
+
+    /* ── Scene ── */
+    .scene {
+      position: relative;
+      z-index: 1;
+      width: min(440px, 92vw);
+      height: 300px;
+      background: linear-gradient(180deg, #e3f4ff 0%, #c8eaff 45%, #d4edaa 45%, #b8dd7a 100%);
+      border-radius: 24px;
+      border: 2px solid #d4c4a8;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(180,120,60,0.12);
+      animation: fadeDown 0.7s 0.2s cubic-bezier(0.22,1,0.36,1) both;
+      cursor: crosshair;
+    }
+
+    /* Sun */
+    .sun {
+      position: absolute;
+      top: 18px; right: 28px;
+      width: 44px; height: 44px;
+      background: #ffe066;
+      border-radius: 50%;
+      box-shadow: 0 0 0 8px #fff3a844;
+      animation: sunPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes sunPulse {
+      0%,100% { box-shadow: 0 0 0 8px #fff3a844; }
+      50%      { box-shadow: 0 0 0 14px #fff3a833; }
+    }
+
+    /* Clouds */
+    .cloud {
+      position: absolute;
+      background: #fff;
+      border-radius: 40px;
+      opacity: 0.88;
+      animation: cloudFloat linear infinite;
+    }
+
+    @keyframes cloudFloat {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-120px); }
+    }
+
+    /* Floor */
+    .floor {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 90px;
+      background: #c8e076;
+    }
+
+    /* Flowers */
+    .flower {
+      position: absolute;
+      bottom: 72px;
+      font-size: 1.3rem;
+      animation: flowerSway 2.5s ease-in-out infinite;
+      transform-origin: bottom center;
+    }
+
+    @keyframes flowerSway {
+      0%,100% { transform: rotate(-4deg); }
+      50%      { transform: rotate(4deg); }
+    }
+
+    /* ── Cat SVG ── */
+    .cat-wrap {
+      position: absolute;
+      bottom: 68px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 110px;
+      height: 130px;
+      transition: left 0.4s cubic-bezier(0.22,1,0.36,1);
+      cursor: pointer;
+    }
+
+    .cat-wrap:hover .cat-body { filter: brightness(1.05); }
+
+    /* Idle bob */
+    .cat-inner {
+      animation: catBob 2s ease-in-out infinite;
+    }
+
+    @keyframes catBob {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-5px); }
+    }
+
+    /* Tail wag */
+    .cat-tail {
+      transform-origin: 10px 5px;
+      animation: tailWag 0.8s ease-in-out infinite;
+    }
+
+    @keyframes tailWag {
+      0%,100% { transform: rotate(-18deg); }
+      50%      { transform: rotate(18deg); }
+    }
+
+    /* Ear wiggle on hover */
+    .cat-wrap:hover .cat-ear-left  { animation: earWiggle 0.3s ease-in-out 2; }
+    .cat-wrap:hover .cat-ear-right { animation: earWiggle 0.3s 0.1s ease-in-out 2; }
+
+    @keyframes earWiggle {
+      0%,100% { transform: rotate(0deg); }
+      50%      { transform: rotate(-12deg); }
+    }
+
+    /* Jump animation */
+    .cat-wrap.jumping .cat-inner {
+      animation: catJump 0.5s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    @keyframes catJump {
+      0%   { transform: translateY(0) scaleY(1); }
+      30%  { transform: translateY(-40px) scaleY(1.1); }
+      60%  { transform: translateY(-50px) scaleY(0.95); }
+      80%  { transform: translateY(-5px) scaleY(1.05); }
+      100% { transform: translateY(0) scaleY(1); }
+    }
+
+    /* Spin */
+    .cat-wrap.spinning {
+      animation: catSpin 0.6s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    @keyframes catSpin {
+      0%   { transform: translateX(-50%) rotate(0deg); }
+      100% { transform: translateX(-50%) rotate(360deg); }
+    }
+
+    /* Sleep */
+    .cat-wrap.sleeping .cat-inner {
+      animation: catSleep 3s ease-in-out infinite;
+    }
+
+    @keyframes catSleep {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(4px); }
+    }
+
+    /* Z bubbles */
+    .zzz {
+      position: absolute;
+      top: -10px; right: -4px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #7ecef4;
+      pointer-events: none;
+      animation: zFloat 1.8s ease-in-out infinite;
+    }
+
+    .zzz:nth-child(2) { font-size: 0.75rem; top: -22px; right: 6px; animation-delay: 0.6s; }
+    .zzz:nth-child(3) { font-size: 0.55rem; top: -32px; right: 14px; animation-delay: 1.2s; }
+
+    @keyframes zFloat {
+      0%   { opacity: 0; transform: translateY(0) rotate(-5deg); }
+      40%  { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-18px) rotate(5deg); }
+    }
+
+    /* Heart pop */
+    .heart-pop {
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.4rem;
+      pointer-events: none;
+      animation: heartPop 0.9s cubic-bezier(0.22,1,0.36,1) forwards;
+    }
+
+    @keyframes heartPop {
+      0%   { opacity: 0; transform: translateX(-50%) scale(0) translateY(0); }
+      40%  { opacity: 1; transform: translateX(-50%) scale(1.3) translateY(-10px); }
+      100% { opacity: 0; transform: translateX(-50%) scale(0.8) translateY(-30px); }
+    }
+
+    /* Food bowl */
+    .food-bowl {
+      position: absolute;
+      bottom: 70px;
+      display: none;
+      animation: bowlAppear 0.3s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    .food-bowl.show { display: block; }
+
+    @keyframes bowlAppear {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    /* Toy */
+    .toy {
+      position: absolute;
+      font-size: 1.5rem;
+      display: none;
+      animation: toyBounce 0.6s ease-in-out infinite alternate;
+      cursor: pointer;
+    }
+
+    .toy.show { display: block; }
+
+    @keyframes toyBounce {
+      0%   { transform: translateY(0) rotate(0deg); }
+      100% { transform: translateY(-8px) rotate(20deg); }
+    }
+
+    /* Mood bubble */
+    .mood-bubble {
+      position: absolute;
+      background: #fff;
+      border: 2px solid #f5dcc8;
+      border-radius: 16px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--brown);
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .mood-bubble.show { opacity: 1; }
+    .mood-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -8px; left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: #f5dcc8;
+    }
+
+    /* ── Buttons ── */
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+      animation: fadeDown 0.7s 0.3s cubic-bezier(0.22,1,0.36,1) both;
+    }
+
+    .btn {
+      background: #fff;
+      border: 2px solid #f0d8c0;
+      border-radius: 40px;
+      padding: 10px 20px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--brown);
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(200,120,60,0.15);
+      background: var(--orange-pale);
+    }
+
+    .btn:active { transform: scale(0.96); }
+
+    .btn-feed  { border-color: var(--orange-light); }
+    .btn-play  { border-color: #7ecef4; }
+    .btn-pet   { border-color: #f48fb1; }
+    .btn-sleep { border-color: #b0bec5; }
+
+    /* ── Message log ── */
+    .message-log {
+      margin-top: 14px;
+      background: #fff;
+      border: 1.5px solid #f0d8c0;
+      border-radius: 16px;
+      padding: 12px 16px;
+      width: min(440px, 92vw);
+      min-height: 52px;
+      position: relative;
+      z-index: 1;
+      font-size: 0.88rem;
+      color: #7a4a28;
+      font-style: italic;
+      text-align: center;
+      animation: fadeDown 0.7s 0.4s cubic-bezier(0.22,1,0.36,1) both;
+      line-height: 1.5;
+    }
+
+    .message-log strong {
+      color: var(--orange);
+      font-style: normal;
+    }
+
+    /* Click sparkle */
+    .sparkle {
+      position: fixed;
+      pointer-events: none;
+      font-size: 1.2rem;
+      animation: sparklePop 0.7s forwards;
+      z-index: 999;
+    }
+
+    @keyframes sparklePop {
+      0%   { opacity: 1; transform: scale(0) rotate(0deg); }
+      50%  { opacity: 1; transform: scale(1.4) rotate(180deg); }
+      100% { opacity: 0; transform: scale(0.5) rotate(360deg) translateY(-30px); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Meet <span>Engine</span> 🐾</h1>
+    <p>Sanby's very own ginger cat</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-icon">😊</span>
+      <span id="happyVal">80</span>
+      <div class="stat-bar-wrap"><div class="stat-bar bar-happy" id="happyBar" style="width:80%"></div></div>
+    </div>
+    <div class="stat">
+      <span class="stat-icon">🍗</span>
+      <span id="hungerVal">60</span>
+      <div class="stat-bar-wrap"><div class="stat-bar bar-hunger" id="hungerBar" style="width:60%"></div></div>
+    </div>
+    <div class="stat">
+      <span class="stat-icon">⚡</span>
+      <span id="energyVal">75</span>
+      <div class="stat-bar-wrap"><div class="stat-bar bar-energy" id="energyBar" style="width:75%"></div></div>
+    </div>
+  </div>
+
+  <!-- Scene -->
+  <div class="scene" id="scene" onclick="sceneClick(event)">
+    <div class="sun"></div>
+
+    <!-- Clouds -->
+    <div class="cloud" style="width:70px;height:26px;top:28px;left:60px;animation-duration:18s;"></div>
+    <div class="cloud" style="width:50px;height:18px;top:40px;left:180px;animation-duration:24s;animation-delay:-8s;"></div>
+    <div class="cloud" style="width:38px;height:14px;top:22px;left:300px;animation-duration:28s;animation-delay:-14s;"></div>
+
+    <!-- Floor -->
+    <div class="floor"></div>
+
+    <!-- Flowers -->
+    <div class="flower" style="left:30px;animation-delay:0s;">🌼</div>
+    <div class="flower" style="left:65px;animation-delay:0.4s;font-size:1rem;">🌷</div>
+    <div class="flower" style="right:30px;animation-delay:0.8s;">🌸</div>
+    <div class="flower" style="right:70px;animation-delay:1.2s;font-size:1rem;">🌻</div>
+
+    <!-- Mood bubble -->
+    <div class="mood-bubble" id="moodBubble">...</div>
+
+    <!-- Food bowl (hidden) -->
+    <div class="food-bowl" id="foodBowl" style="left:160px;">🍗</div>
+
+    <!-- Toy (hidden) -->
+    <div class="toy" id="toy" style="left:80px;bottom:90px;" onclick="toyClick(event)">🧶</div>
+
+    <!-- Cat -->
+    <div class="cat-wrap" id="catWrap" onclick="petCat(event)">
+      <div class="cat-inner" id="catInner">
+        <svg width="110" height="130" viewBox="0 0 110 130" xmlns="http://www.w3.org/2000/svg">
+
+          <!-- Tail -->
+          <g class="cat-tail" id="catTail">
+            <path d="M 55 105 Q 20 115 18 90 Q 16 70 30 68" stroke="#d4621a" stroke-width="8" fill="none" stroke-linecap="round"/>
+          </g>
+
+          <!-- Body -->
+          <ellipse cx="55" cy="90" rx="32" ry="28" fill="#e8761a"/>
+          <!-- Belly -->
+          <ellipse cx="55" cy="96" rx="18" ry="16" fill="#f5c98a"/>
+
+          <!-- Stripes on body -->
+          <path d="M 32 78 Q 40 74 48 78" stroke="#c05810" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+          <path d="M 62 78 Q 70 74 78 78" stroke="#c05810" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+
+          <!-- Left back leg -->
+          <ellipse cx="34" cy="113" rx="10" ry="8" fill="#d46418"/>
+          <!-- Right back leg -->
+          <ellipse cx="76" cy="113" rx="10" ry="8" fill="#d46418"/>
+
+          <!-- Paws -->
+          <ellipse cx="34" cy="119" rx="9" ry="5" fill="#e87828"/>
+          <ellipse cx="76" cy="119" rx="9" ry="5" fill="#e87828"/>
+
+          <!-- Head -->
+          <ellipse id="catHead" cx="55" cy="52" rx="26" ry="24" fill="#e8761a"/>
+
+          <!-- Ears -->
+          <g class="cat-ear-left">
+            <polygon points="32,36 22,14 44,30" fill="#e8761a"/>
+            <polygon points="33,34 27,18 42,30" fill="#f5a070" opacity="0.7"/>
+          </g>
+          <g class="cat-ear-right">
+            <polygon points="78,36 88,14 66,30" fill="#e8761a"/>
+            <polygon points="77,34 83,18 68,30" fill="#f5a070" opacity="0.7"/>
+          </g>
+
+          <!-- Head stripes -->
+          <path d="M 45 36 L 42 26" stroke="#c05810" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+          <path d="M 55 34 L 55 24" stroke="#c05810" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+          <path d="M 65 36 L 68 26" stroke="#c05810" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+
+          <!-- Forehead dot -->
+          <circle cx="55" cy="40" r="3" fill="#c05810" opacity="0.5"/>
+
+          <!-- Eyes (normal) -->
+          <g id="eyesNormal">
+            <ellipse cx="45" cy="52" rx="5.5" ry="6" fill="#2a1a0a"/>
+            <ellipse cx="65" cy="52" rx="5.5" ry="6" fill="#2a1a0a"/>
+            <circle cx="47" cy="50" r="1.5" fill="#fff"/>
+            <circle cx="67" cy="50" r="1.5" fill="#fff"/>
+            <!-- Eye shine -->
+            <circle cx="43" cy="53" r="1" fill="#fff" opacity="0.6"/>
+            <circle cx="63" cy="53" r="1" fill="#fff" opacity="0.6"/>
+          </g>
+
+          <!-- Eyes (sleep — closed arcs) -->
+          <g id="eyesSleep" style="display:none;">
+            <path d="M 39 52 Q 45 46 51 52" stroke="#2a1a0a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 59 52 Q 65 46 71 52" stroke="#2a1a0a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          </g>
+
+          <!-- Eyes (happy — arc) -->
+          <g id="eyesHappy" style="display:none;">
+            <path d="M 39 55 Q 45 48 51 55" stroke="#2a1a0a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M 59 55 Q 65 48 71 55" stroke="#2a1a0a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          </g>
+
+          <!-- Nose -->
+          <polygon points="55,60 52,57 58,57" fill="#e05080"/>
+          <!-- Mouth -->
+          <path d="M 55 60 Q 51 64 48 63" stroke="#c05080" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M 55 60 Q 59 64 62 63" stroke="#c05080" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+          <!-- Whiskers left -->
+          <line x1="30" y1="58" x2="49" y2="60" stroke="#fff" stroke-width="1.2" opacity="0.9"/>
+          <line x1="28" y1="62" x2="48" y2="62" stroke="#fff" stroke-width="1.2" opacity="0.9"/>
+          <line x1="30" y1="66" x2="49" y2="63" stroke="#fff" stroke-width="1.2" opacity="0.9"/>
+          <!-- Whiskers right -->
+          <line x1="80" y1="58" x2="61" y2="60" stroke="#fff" stroke-width="1.2" opacity="0.9"/>
+          <line x1="82" y1="62" x2="62" y2="62" stroke="#fff" stroke-width="1.2" opacity="0.9"/>
+          <line x1="80" y1="66" x2="61" y2="63" stroke="#fff" stroke-width="1.2" opacity="0.9"/>
+
+          <!-- Front paws -->
+          <ellipse cx="40" cy="115" rx="9" ry="6" fill="#e87828"/>
+          <ellipse cx="70" cy="115" rx="9" ry="6" fill="#e87828"/>
+          <!-- Toe lines -->
+          <line x1="37" y1="118" x2="37" y2="112" stroke="#c05810" stroke-width="1" opacity="0.5"/>
+          <line x1="40" y1="119" x2="40" y2="113" stroke="#c05810" stroke-width="1" opacity="0.5"/>
+          <line x1="43" y1="118" x2="43" y2="112" stroke="#c05810" stroke-width="1" opacity="0.5"/>
+          <line x1="67" y1="118" x2="67" y2="112" stroke="#c05810" stroke-width="1" opacity="0.5"/>
+          <line x1="70" y1="119" x2="70" y2="113" stroke="#c05810" stroke-width="1" opacity="0.5"/>
+          <line x1="73" y1="118" x2="73" y2="112" stroke="#c05810" stroke-width="1" opacity="0.5"/>
+
+        </svg>
+      </div>
+      <!-- Zzz (hidden) -->
+      <div class="zzz" id="z1" style="display:none;">z</div>
+      <div class="zzz" id="z2" style="display:none;">z</div>
+      <div class="zzz" id="z3" style="display:none;">z</div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="actions">
+    <button class="btn btn-feed"  onclick="feed()">🍗 Feed</button>
+    <button class="btn btn-play"  onclick="play()">🧶 Play</button>
+    <button class="btn btn-pet"   onclick="petCatBtn()">🤚 Pet</button>
+    <button class="btn btn-sleep" onclick="sleep()">💤 Sleep</button>
+  </div>
+
+  <!-- Message -->
+  <div class="message-log" id="msgLog">
+    <strong>Engine</strong> is waiting for Sanby… 🐾 Click on Engine or use the buttons!
+  </div>
+
+  <script>
+    const state = { happy: 80, hunger: 60, energy: 75 };
+    let sleeping = false;
+    let msgTimeout, jumpTimeout, moodTimeout;
+
+    function updateStats() {
+      ['happy','hunger','energy'].forEach(k => {
+        const val = Math.max(0, Math.min(100, Math.round(state[k])));
+        document.getElementById(k+'Val').textContent = val;
+        document.getElementById(k+'Bar').style.width = val + '%';
+      });
+    }
+
+    function showMsg(html) {
+      document.getElementById('msgLog').innerHTML = html;
+      clearTimeout(msgTimeout);
+      msgTimeout = setTimeout(() => {
+        document.getElementById('msgLog').innerHTML = '<strong>Engine</strong> is chilling 😺';
+      }, 4000);
+    }
+
+    function showMood(text) {
+      const b = document.getElementById('moodBubble');
+      b.textContent = text;
+      b.classList.add('show');
+      clearTimeout(moodTimeout);
+      moodTimeout = setTimeout(() => b.classList.remove('show'), 2200);
+    }
+
+    function setEyes(type) {
+      document.getElementById('eyesNormal').style.display = type === 'normal' ? '' : 'none';
+      document.getElementById('eyesSleep').style.display  = type === 'sleep'  ? '' : 'none';
+      document.getElementById('eyesHappy').style.display  = type === 'happy'  ? '' : 'none';
+    }
+
+    function wakeUp() {
+      sleeping = false;
+      const w = document.getElementById('catWrap');
+      w.classList.remove('sleeping');
+      document.getElementById('z1').style.display = 'none';
+      document.getElementById('z2').style.display = 'none';
+      document.getElementById('z3').style.display = 'none';
+      setEyes('normal');
+    }
+
+    function heartPop() {
+      const h = document.createElement('div');
+      h.className = 'heart-pop';
+      h.textContent = ['💕','❤️','🧡','💖'][Math.floor(Math.random()*4)];
+      document.getElementById('catWrap').appendChild(h);
+      setTimeout(() => h.remove(), 900);
+    }
+
+    function jumpCat() {
+      if (sleeping) wakeUp();
+      const w = document.getElementById('catWrap');
+      w.classList.remove('jumping');
+      void w.offsetWidth;
+      w.classList.add('jumping');
+      clearTimeout(jumpTimeout);
+      jumpTimeout = setTimeout(() => w.classList.remove('jumping'), 600);
+    }
+
+    function spinCat() {
+      const w = document.getElementById('catWrap');
+      w.classList.remove('spinning');
+      void w.offsetWidth;
+      w.classList.add('spinning');
+      setTimeout(() => w.classList.remove('spinning'), 650);
+    }
+
+    // ── Actions ──
+
+    function feed() {
+      if (sleeping) wakeUp();
+      state.hunger = Math.min(100, state.hunger + 28);
+      state.happy  = Math.min(100, state.happy  + 8);
+      updateStats();
+      jumpCat();
+      setEyes('happy');
+      setTimeout(() => setEyes('normal'), 1800);
+      const bowl = document.getElementById('foodBowl');
+      bowl.style.left = (Math.random() * 200 + 80) + 'px';
+      bowl.classList.add('show');
+      setTimeout(() => bowl.classList.remove('show'), 2200);
+      heartPop();
+      showMood('Yummy!! 😋');
+      const msgs = [
+        '<strong>Engine</strong> dashes to the bowl and eats with zero chill 🍗',
+        '<strong>Engine</strong> headbutts the bowl and purrs loudly 😸',
+        '<strong>Engine</strong> finishes every last crumb and looks at you for more 🐾',
+      ];
+      showMsg(msgs[Math.floor(Math.random()*msgs.length)]);
+    }
+
+    function play() {
+      if (sleeping) wakeUp();
+      state.happy  = Math.min(100, state.happy  + 20);
+      state.energy = Math.max(0,   state.energy - 15);
+      state.hunger = Math.max(0,   state.hunger - 10);
+      updateStats();
+      spinCat();
+      const toy = document.getElementById('toy');
+      toy.style.left = (Math.random() * 260 + 40) + 'px';
+      toy.style.bottom = (Math.random() * 60 + 80) + 'px';
+      toy.classList.add('show');
+      setTimeout(() => toy.classList.remove('show'), 2500);
+      setEyes('happy');
+      setTimeout(() => setEyes('normal'), 2000);
+      heartPop();
+      showMood('Wheeeee!! 🌀');
+      const msgs = [
+        '<strong>Engine</strong> LAUNCHES at the yarn ball like a furry missile 🧶',
+        '<strong>Engine</strong> does three zoomies and crashes into a flower 🌼',
+        '<strong>Engine</strong> bats the toy off the table and looks you dead in the eye 😼',
+        '<strong>Engine</strong> sprints in circles for no reason whatsoever 🌀',
+      ];
+      showMsg(msgs[Math.floor(Math.random()*msgs.length)]);
+    }
+
+    function petCatBtn() {
+      petCat(null);
+    }
+
+    function petCat(e) {
+      if (sleeping) wakeUp();
+      state.happy = Math.min(100, state.happy + 15);
+      updateStats();
+      jumpCat();
+      setEyes('happy');
+      setTimeout(() => setEyes('normal'), 2200);
+      heartPop();
+      showMood('Purrrr… 💕');
+      if (e) spawnSparkle(e.clientX, e.clientY);
+      const msgs = [
+        '<strong>Engine</strong> closes eyes and purrs like a tiny engine 🚗💨',
+        '<strong>Engine</strong> pushes into your hand and demands more scratches 🐾',
+        '<strong>Engine</strong> flops dramatically onto their side — maximum comfort mode 😻',
+        '<strong>Engine</strong> kneads your lap and drools a little bit. You\'re loved 🧡',
+      ];
+      showMsg(msgs[Math.floor(Math.random()*msgs.length)]);
+    }
+
+    function sleep() {
+      sleeping = true;
+      state.energy = Math.min(100, state.energy + 35);
+      updateStats();
+      const w = document.getElementById('catWrap');
+      w.classList.add('sleeping');
+      w.classList.remove('jumping','spinning');
+      document.getElementById('z1').style.display = '';
+      document.getElementById('z2').style.display = '';
+      document.getElementById('z3').style.display = '';
+      setEyes('sleep');
+      showMood('Zzz… 💤');
+      showMsg('<strong>Engine</strong> curls into a perfect donut and starts snoring 💤');
+    }
+
+    function toyClick(e) {
+      e.stopPropagation();
+      jumpCat();
+      spawnSparkle(e.clientX, e.clientY);
+      showMood('GOT IT!! 🎉');
+      state.happy = Math.min(100, state.happy + 5);
+      updateStats();
+    }
+
+    // Click on scene to make cat move towards click
+    function sceneClick(e) {
+      const scene = document.getElementById('scene');
+      const rect  = scene.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const catWrap = document.getElementById('catWrap');
+      const sceneW  = rect.width;
+      // Clamp position so cat stays inside scene
+      const catW = 110;
+      const newLeft = Math.max(catW/2, Math.min(sceneW - catW/2, clickX));
+      catWrap.style.left = newLeft + 'px';
+      catWrap.style.transform = 'translateX(-50%)';
+      if (Math.random() < 0.4) jumpCat();
+    }
+
+    function spawnSparkle(x, y) {
+      const sparks = ['✨','⭐','💫','🌟'];
+      const s = document.createElement('div');
+      s.className = 'sparkle';
+      s.textContent = sparks[Math.floor(Math.random()*sparks.length)];
+      s.style.left = x + 'px';
+      s.style.top  = y + 'px';
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 700);
+    }
+
+    // Passive stat decay
+    setInterval(() => {
+      if (!sleeping) {
+        state.hunger = Math.max(0, state.hunger - 1);
+        state.happy  = Math.max(0, state.happy  - 0.5);
+        state.energy = Math.max(0, state.energy - 0.3);
+      } else {
+        state.energy = Math.min(100, state.energy + 1);
+        if (state.energy >= 100) wakeUp();
+      }
+      updateStats();
+    }, 8000);
+
+    // Occasional random mood
+    setInterval(() => {
+      if (sleeping) return;
+      const moods = ['🐾','😺','🧡','…meow?','🌈','Bored…','zoomies!'];
+      showMood(moods[Math.floor(Math.random()*moods.length)]);
+    }, 12000);
+  </script>
+</body>
+</html>
